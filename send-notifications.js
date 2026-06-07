@@ -98,13 +98,23 @@ async function getAllUsers() {
   if (!data.documents) { console.log('No users found'); return []; }
   return data.documents.map(doc => {
     const f = doc.fields || {};
+    // Распаковываем цели (map тип в Firestore)
+    const goalField = f.goal?.mapValue?.fields || {};
+    const goal = {
+      income:   goalField.income?.stringValue   || null,
+      reason:   goalField.reason?.stringValue   || null,
+      maingoal: goalField.maingoal?.stringValue || null,
+      dream:    goalField.dream?.stringValue    || null,
+      forwhom:  goalField.forwhom?.stringValue  || null,
+    };
     return {
       uid:        f.uid?.stringValue,
       name:       f.name?.stringValue || 'Партнёр',
       chatId:     f.chatId?.stringValue,
       streak:     parseInt(f.currentStreak?.integerValue || 0),
       lastDate:   f.lastActiveDate?.stringValue || '',
-      invitedBy:  f.invitedBy?.stringValue || null
+      invitedBy:  f.invitedBy?.stringValue || null,
+      goal
     };
   }).filter(u => u.chatId);
 }
@@ -154,8 +164,27 @@ async function main() {
     let text      = null;
     let btnText   = '✓ Открыть DOJO';
 
+    // ── СРЕДА: НАПОМИНАНИЕ О ЦЕЛЯХ ────────────────
+    if (TYPE === 'goals') {
+      const g = user.goal || {};
+      if (!g.maingoal && !g.dream) { skipped++; continue; }
+      const name = user.name.split(' ')[0];
+      let goalLines = '';
+      if (g.income)   goalLines += `💰 *Цель по доходу:* ${g.income}\n`;
+      if (g.maingoal) goalLines += `🎯 *Главная цель:* ${g.maingoal}\n`;
+      if (g.dream)    goalLines += `✨ *Мечта:* ${g.dream}\n`;
+      if (g.forwhom)  goalLines += `❤️ *Для кого:* ${g.forwhom}\n`;
+      if (g.reason)   goalLines += `💡 *Зачем:* ${g.reason}\n`;
+      text =
+        `🔄 *${name}, помни зачем ты здесь*\n\n` +
+        `Ты написал это сам — в первый день:\n\n` +
+        goalLines +
+        `\nКаждое действие сегодня приближает тебя к этому 👇`;
+      btnText = '✓ Отметить действия';
+    }
+
     // ── ВОСКРЕСНЫЙ АУДИТ ──────────────────────────
-    if (TYPE === 'audit') {
+    else if (TYPE === 'audit') {
       // Напоминание об аудите — всем кто ещё не прошёл
       const name = user.name.split(' ')[0];
       text =
