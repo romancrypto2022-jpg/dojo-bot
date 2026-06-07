@@ -1,0 +1,32 @@
+name: DOJO Daily Notifications
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # 9:00 МСК — утренняя мысль дня
+    - cron: '0 17 * * *'  # 20:00 МСК — вечернее напоминание
+  workflow_dispatch:        # кнопка ручного запуска в GitHub
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Send morning notifications
+        if: github.event.schedule == '0 6 * * *' || github.event_name == 'workflow_dispatch'
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          NOTIFY_TYPE: morning
+        run: node send-notifications.js
+
+      - name: Send evening reminders
+        if: github.event.schedule == '0 17 * * *'
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          NOTIFY_TYPE: evening
+        run: node send-notifications.js
