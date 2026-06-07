@@ -4,6 +4,7 @@ on:
   schedule:
     - cron: '0 6 * * *'    # 9:00 МСК — утренняя мысль дня (все дни)
     - cron: '0 17 * * *'   # 20:00 МСК — умные вечерние уведомления
+    - cron: '0 6 * * 3'    # 9:00 МСК среда — напоминание о целях
     - cron: '0 14 * * 0'   # 17:00 МСК воскресенье — напоминание об аудите
   workflow_dispatch:
     inputs:
@@ -12,7 +13,7 @@ on:
         required: false
         default: 'morning'
         type: choice
-        options: [morning, evening, audit]
+        options: [morning, evening, goals, audit]
 
 jobs:
   notify:
@@ -25,11 +26,18 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Morning — мысль дня
+      - name: Morning — мысль дня (кроме среды)
         if: github.event.schedule == '0 6 * * *' || (github.event_name == 'workflow_dispatch' && github.event.inputs.notify_type == 'morning')
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           NOTIFY_TYPE: morning
+        run: node send-notifications.js
+
+      - name: Wednesday — напоминание о целях
+        if: github.event.schedule == '0 6 * * 3' || (github.event_name == 'workflow_dispatch' && github.event.inputs.notify_type == 'goals')
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          NOTIFY_TYPE: goals
         run: node send-notifications.js
 
       - name: Evening — умные уведомления
