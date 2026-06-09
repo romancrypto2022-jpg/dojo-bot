@@ -206,15 +206,12 @@ async function getAllUsers() {
 
 // ── ОТПРАВИТЬ СООБЩЕНИЕ ───────────────────────────
 async function sendMsg(chatId, text, btnText = '✓ Открыть DOJO') {
+  const body = { chat_id: chatId, text, parse_mode: 'Markdown' };
+  if (btnText) body.reply_markup = { inline_keyboard: [[{ text: btnText, url: DOJO_URL }]] };
   const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id:      chatId,
-      text,
-      parse_mode:   'Markdown',
-      reply_markup: { inline_keyboard: [[{ text: btnText, url: DOJO_URL }]] }
-    })
+    body: JSON.stringify(body)
   });
   await new Promise(r => setTimeout(r, 150));
   return res.ok;
@@ -288,9 +285,8 @@ async function main() {
       text =
         `☀️ *Доброе утро, ${name}!*\n\n` +
         `💡 *Мысль дня:*\n_${THOUGHTS[dayIdx]}_\n\n` +
-        `❓ *Вопрос:*\n${QUESTIONS[dayIdx % QUESTIONS.length]}${streakLine}\n` +
-        `Отметь действия сегодня 👇`;
-      btnText = '✓ Открыть чеклист';
+        `❓ *Вопрос на сегодня:*\n${QUESTIONS[dayIdx % QUESTIONS.length]}${streakLine}`;
+      btnText = null; // Утром — без ссылки
     }
 
     // ── УМНЫЕ ВЕЧЕРНИЕ УВЕДОМЛЕНИЯ ─────────────────
